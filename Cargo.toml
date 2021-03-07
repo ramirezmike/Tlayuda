@@ -1,0 +1,12 @@
+[package]
+name = "tob"
+version = "0.1.0"
+authors = ["mramirez <ramirezmike2@gmail.com>"]
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1.0.9"
+syn = { version="1.0.61", features = ["full"] }
