@@ -1,74 +1,59 @@
 extern crate tob;
-use tob::tob;
 
-#[derive(tob)]
-struct Person {
+#[derive(Debug)]
+struct TemplateExample {
     first_name: String,
     last_name: String,
-    ssn: String,
 }
 
-#[derive(tob)]
-struct Teacher {
-    first_name: String,
-    last_name: String,
-    ssn: String,
+impl TemplateExample {
+    pub fn tob() -> ExampleBuilder {
+        ExampleBuilder::new()
+    }
 }
 
-struct InnerPob {
-    thing : Option<Box<dyn FnMut(usize) -> String>>
+struct ExampleBuilder {
+    first_name: Box<dyn FnMut(usize) -> String>,
+    last_name: Box<dyn FnMut(usize) -> String>,
 }
-impl InnerPob {
-    pub fn new() -> InnerPob {
-        InnerPob {
-            thing: None
+impl ExampleBuilder {
+    pub fn new() -> ExampleBuilder {
+        ExampleBuilder {
+            first_name: Box::new(|x| format!("first_name{}", x).into()),
+            last_name: Box::new(|x| format!("last_name{}", x).into()),
         }
     }
 
-    pub fn set_thing<F: 'static>(mut self, f: F) -> Self where
-        F: Fn(usize) -> String {
-            self.thing = Some(Box::new(f));
-            self
+    pub fn set_first_name<F: 'static>(mut self, f: F) -> Self
+    where
+        F: Fn(usize) -> String,
+    {
+        self.first_name = Box::new(f);
+        self
     }
 
-    pub fn build(&mut self) -> Person {
-        let t = self.thing.as_mut().unwrap();
-        Person {
-            first_name: t(0),
-            last_name: t(1),
-            ssn: t(2)
+    pub fn _set_last_name<F: 'static>(mut self, f: F) -> Self
+    where
+        F: Fn(usize) -> String,
+    {
+        self.last_name = Box::new(f);
+        self
+    }
+
+    pub fn build(&mut self) -> TemplateExample {
+        let first_name = self.first_name.as_mut();
+        let last_name = self.last_name.as_mut();
+
+        TemplateExample {
+            first_name: first_name(0),
+            last_name: last_name(1),
         }
-    }
-}
-
-struct OB<T> {
-    phantom: std::marker::PhantomData<T>
-}
-
-impl OB<Person> {
-    pub fn new() -> InnerPob {
-        InnerPob::new()
     }
 }
 
 fn main() {
-    let mut  x = OB::<Person>::new();
-    x = x.set_thing(|i| format!("blaha{}", i).into());
-    let result = x.build();
-    println!("Hello Test {} {} {}", result.first_name, result.last_name, result.ssn);
-
-
-    let mut p = ObjectBuilder::<Person>::new();
-    let p = p.set_first_name(|i| format!("baa{}", i).into())
-             .build();
-    println!("Hello Person {} {} {}", p.first_name, p.last_name, p.ssn);
-
-    let mut p = ObjectBuilder::<Person>::new();
-    p.build_vec()
-     .iter()
-     .for_each(|x| println!("Hello Persons {} {} {}", x.first_name, x.last_name, x.ssn));
-
-    let mut p = ObjectBuilder::<Teacher>::new();
-    let p = p.build();
-    println!("Hello Teacher {} {} {}", p.first_name, p.last_name, p.ssn);
+    // this is a scratch pad example to model macro output after
+    let mut example = TemplateExample::tob();
+    example = example.set_first_name(|i| format!("Example{}", i).into());
+    println!("{:?}", example.build());
 }
