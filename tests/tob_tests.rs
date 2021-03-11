@@ -1,44 +1,9 @@
-use tob::*;
-
-#[derive(tob, Debug)]
-pub struct Person {
-    first_name: String,
-    last_name: String,
-    ssn: String,
-}
-
-#[derive(tob, Debug)]
-pub struct Teacher {
-    id: u32,
-    first_name: String,
-    last_name: String,
-    has_class: bool,
-}
-
-#[derive(tob, Debug)]
-pub struct TypeTester {
-    type_string: String,
-    type_bool: bool,
-    type_i8: i8,
-    type_i16: i16,
-    type_i32: i32,
-    type_u8: u8,
-    type_u16: u16,
-    type_u32: u32,
-    type_i64: i64,
-    type_i128: i128,
-    type_isize: isize,
-    type_u64: u64,
-    type_u128: u128,
-    type_usize: usize,
-    type_f32: f32,
-    type_f64: f64,
-    type_char: char,
-}
+mod models;
+use std::sync::{Arc, Mutex};
 
 #[test]
 fn basic_build() {
-    let mut builder = Person::test_obj_builder();
+    let mut builder = models::Person::test_obj_builder();
     let person_0 = builder.build();
     let person_1 = builder.build();
     let person_2 = builder.build();
@@ -58,7 +23,7 @@ fn basic_build() {
 
 #[test]
 fn basic_build_vec() {
-    Person::test_obj_builder()
+    models::Person::test_obj_builder()
         .build_vec(1000)
         .iter()
         .enumerate()
@@ -71,8 +36,8 @@ fn basic_build_vec() {
 
 #[test]
 fn verify_able_to_build_different_objects() {
-    let person = Person::test_obj_builder().build();
-    let teacher = Teacher::test_obj_builder().build();
+    let person = models::Person::test_obj_builder().build();
+    let teacher = models::Teacher::test_obj_builder().build();
 
     assert_eq!("first_name0", person.first_name);
     assert_eq!("last_name0", person.last_name);
@@ -88,7 +53,7 @@ fn verify_able_to_build_different_objects() {
 fn verify_basic_set_functions() {
     let expected_first_name: String = "Michael".into();
     let expected_last_name: String = "Ramirez".into();
-    let person = Person::test_obj_builder()
+    let person = models::Person::test_obj_builder()
         .set_first_name(move |_| expected_first_name.clone())
         .set_last_name(move |_| expected_last_name.clone())
         .build();
@@ -98,7 +63,7 @@ fn verify_basic_set_functions() {
 
 #[test]
 fn verify_incrementing_index_in_set_functions_build() {
-    let mut builder = Person::test_obj_builder()
+    let mut builder = models::Person::test_obj_builder()
         .set_first_name(|i| i.to_string())
         .set_last_name(|i| i.to_string());
 
@@ -111,7 +76,7 @@ fn verify_incrementing_index_in_set_functions_build() {
 
 #[test]
 fn verify_incrementing_index_in_set_functions_build_vec() {
-    Person::test_obj_builder()
+    models::Person::test_obj_builder()
         .set_first_name(|i| i.to_string())
         .set_last_name(|i| i.to_string())
         .build_vec(1000)
@@ -137,7 +102,7 @@ fn verify_set_function_build_vec_fizzbuzz() {
         "Fizz", "Buzz",
     ];
 
-    Person::test_obj_builder()
+    models::Person::test_obj_builder()
         .set_first_name(|i| match (i % 3, i % 5) {
             (0, 0) => "FizzBuzz".into(),
             (0, _) => "Fizz".into(),
@@ -153,7 +118,34 @@ fn verify_set_function_build_vec_fizzbuzz() {
 
 #[test]
 fn verify_char() {
-    let type_tester = TypeTester::test_obj_builder()
-                                .build();
+    let type_tester = models::TypeTester::test_obj_builder().build();
     assert_eq!('0', type_tester.type_char);
+}
+
+#[test]
+fn verify_recursive_building() {
+    let type_tester = models::TypeTester::test_obj_builder().build();
+    assert_eq!("first_name0", type_tester.type_person.first_name);
+}
+
+#[test]
+fn verify_recursive_building_vec() {
+    models::TypeTester::test_obj_builder()
+                        .build_vec(100)
+                        .iter()
+                        .enumerate()
+                        .for_each(|(i, x)| assert_eq!(format!("first_name{}", i), x.type_person.first_name));
+}
+
+#[test]
+fn verify_recursive_building_vec_with_setter() {
+    let person_builder = models::Person::test_obj_builder()
+                                .set_first_name(|i| i.to_string());
+    let person_builder = Arc::new(Mutex::new(person_builder));
+    models::TypeTester::test_obj_builder()
+                        .set_type_person(move |_| person_builder.lock().unwrap().build()) 
+                        .build_vec(100)
+                        .iter()
+                        .enumerate()
+                        .for_each(|(i, x)| assert_eq!(i.to_string(), x.type_person.first_name));
 }

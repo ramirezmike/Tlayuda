@@ -26,7 +26,7 @@ pub fn tob(input: TokenStream) -> TokenStream {
     });
 
     let field_builder_intializers = fields.clone().map(|(x, t)| {
-        let identity = match t {
+        let identity = match t.clone() {
             Type::Path(type_path) => match type_path.path.get_ident() {
                 Some(ident) => ident.clone(),
                 _ => todo!("Path Type {:?} not supported", type_path),
@@ -55,7 +55,14 @@ pub fn tob(input: TokenStream) -> TokenStream {
                 let parameter_type = quote::format_ident!("{}", t);
                 quote! { |i| i as #parameter_type }
             }
-            _ => todo!("Identity not implemented {:?}", identity),
+            t => {
+                // attempt to call a builder that may be on this type
+                // this will end up causing a compile error if the type doesn't have
+                // the #[derive(tob)] macro. 
+                // TODO: Need to figure out a way to communicate this better in the compiler
+                let parameter_type = quote::format_ident!("{}", t);
+                quote! { |i| #parameter_type::test_obj_builder().with_index(i).build() }
+            }
         };
 
         quote! { #x: Box::new(#f), }
