@@ -2,8 +2,8 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, ItemStruct, Type};
 
-#[proc_macro_derive(tob)]
-pub fn tob(input: TokenStream) -> TokenStream {
+#[proc_macro_derive(Tlayuda)]
+pub fn entry_point(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as ItemStruct);
     let fields = input
         .fields
@@ -12,7 +12,7 @@ pub fn tob(input: TokenStream) -> TokenStream {
         .map(|x| (x.ident.as_ref(), x.ty.clone()));
 
     let source_struct_name = &input.ident;
-    let inner_builder_name = quote::format_ident!("TobInner{}Builder", source_struct_name);
+    let inner_builder_name = quote::format_ident!("Tlayuda{}Builder", source_struct_name);
 
     let field_setter_functions = fields.clone().map(|(x, t)| {
         let func_name = quote::format_ident!("set_{}", x.unwrap());
@@ -58,10 +58,10 @@ pub fn tob(input: TokenStream) -> TokenStream {
             t => {
                 // attempt to call a builder that may be on this type
                 // this will end up causing a compile error if the type doesn't have
-                // the #[derive(tob)] macro. 
+                // the #[derive(Tlayuda)] macro. 
                 // TODO: Need to figure out a way to communicate this better in the compiler
                 let parameter_type = quote::format_ident!("{}", t);
-                quote! { |i| #parameter_type::test_obj_builder().with_index(i).build() }
+                quote! { |i| #parameter_type::tlayuda().with_index(i).build() }
             }
         };
 
@@ -115,7 +115,7 @@ pub fn tob(input: TokenStream) -> TokenStream {
         }
 
         impl #source_struct_name {
-            pub fn test_obj_builder() -> #inner_builder_name {
+            pub fn tlayuda() -> #inner_builder_name {
                 #inner_builder_name::new()
             }
         }

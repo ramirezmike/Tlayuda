@@ -1,5 +1,3 @@
-extern crate tob;
-
 #[derive(Debug)]
 struct TemplateExample {
     first_name: String,
@@ -7,7 +5,7 @@ struct TemplateExample {
 }
 
 impl TemplateExample {
-    pub fn tob() -> ExampleBuilder {
+    pub fn tlayuda() -> ExampleBuilder {
         ExampleBuilder::new()
     }
 }
@@ -53,7 +51,7 @@ impl ExampleBuilder {
 
 fn main() {
     // this is a scratch pad example to model macro output after
-    let mut example = TemplateExample::tob();
+    let mut example = TemplateExample::tlayuda();
     example = example.set_first_name(|i| format!("Example{}", i).into());
     println!("{:?}", example.build());
 }

@@ -32,8 +32,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "tob"
-version = "0.1.0"
+name = "tlayuda"
+version = "0.1.1"
 dependencies = [
  "proc-macro2",
  "quote",

@@ -1,13 +1,13 @@
-use tob::*;
+use tlayuda::*;
 
-#[derive(tob, Debug)]
+#[derive(Tlayuda, Debug)]
 pub struct Person {
     pub first_name: String,
     pub last_name: String,
     pub ssn: String,
 }
 
-#[derive(tob, Debug)]
+#[derive(Tlayuda, Debug)]
 pub struct Teacher {
     pub id: u32,
     pub first_name: String,
@@ -16,12 +16,12 @@ pub struct Teacher {
 }
 
 #[derive(Debug)]
-pub struct NonTobUsingStruct
+pub struct NonTlayudaUsingStruct
 {
     pub id: u32,
 }
 
-#[derive(tob, Debug)]
+#[derive(Tlayuda, Debug)]
 pub struct TypeTester {
     pub type_string: String,
     pub type_bool: bool,
