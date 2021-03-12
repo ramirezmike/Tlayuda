@@ -1,3 +1,4 @@
+use std::ffi::OsString;
 use tlayuda::*;
 
 #[derive(Tlayuda, Debug)]
@@ -16,8 +17,7 @@ pub struct Teacher {
 }
 
 #[derive(Debug)]
-pub struct NonTlayudaUsingStruct
-{
+pub struct NonTlayudaUsingStruct {
     pub id: u32,
 }
 
@@ -41,4 +41,6 @@ pub struct TypeTester {
     pub type_f64: f64,
     pub type_char: char,
     pub type_person: Person,
+    pub type_osstring: OsString,
+    pub type_full_path: std::ffi::OsString,
 }

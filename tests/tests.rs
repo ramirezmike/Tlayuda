@@ -117,12 +117,6 @@ fn verify_set_function_build_vec_fizzbuzz() {
 }
 
 #[test]
-fn verify_char() {
-    let type_tester = models::TypeTester::tlayuda().build();
-    assert_eq!('0', type_tester.type_char);
-}
-
-#[test]
 fn verify_recursive_building() {
     let type_tester = models::TypeTester::tlayuda().build();
     assert_eq!("first_name0", type_tester.type_person.first_name);
@@ -131,21 +125,40 @@ fn verify_recursive_building() {
 #[test]
 fn verify_recursive_building_vec() {
     models::TypeTester::tlayuda()
-                        .build_vec(100)
-                        .iter()
-                        .enumerate()
-                        .for_each(|(i, x)| assert_eq!(format!("first_name{}", i), x.type_person.first_name));
+        .build_vec(100)
+        .iter()
+        .enumerate()
+        .for_each(|(i, x)| assert_eq!(format!("first_name{}", i), x.type_person.first_name));
 }
 
 #[test]
 fn verify_recursive_building_vec_with_setter() {
-    let person_builder = models::Person::tlayuda()
-                                .set_first_name(|i| i.to_string());
+    let person_builder = models::Person::tlayuda().set_first_name(|i| i.to_string());
     let person_builder = Arc::new(Mutex::new(person_builder));
     models::TypeTester::tlayuda()
-                        .set_type_person(move |_| person_builder.lock().unwrap().build()) 
-                        .build_vec(100)
-                        .iter()
-                        .enumerate()
-                        .for_each(|(i, x)| assert_eq!(i.to_string(), x.type_person.first_name));
+        .set_type_person(move |_| person_builder.lock().unwrap().build())
+        .build_vec(100)
+        .iter()
+        .enumerate()
+        .for_each(|(i, x)| assert_eq!(i.to_string(), x.type_person.first_name));
+}
+
+/* Specific Types tests */
+
+#[test]
+fn verify_char() {
+    let type_tester = models::TypeTester::tlayuda().build();
+    assert_eq!('0', type_tester.type_char);
+}
+
+#[test]
+fn verify_osstring() {
+    let type_tester = models::TypeTester::tlayuda().build();
+    assert_eq!("type_osstring0", type_tester.type_osstring);
+}
+
+#[test]
+fn verify_full_path() {
+    let type_tester = models::TypeTester::tlayuda().build();
+    assert_eq!("type_full_path0", type_tester.type_full_path);
 }
