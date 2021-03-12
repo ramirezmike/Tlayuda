@@ -112,5 +112,7 @@ Currently Tlayuda supports structs that are **solely** composed of the following
 * numeric primitives (i8-i128, u8-u128, f32, f64, isize, usize)
 * bools
 * char
-* String
+* String, OsString
 * structs composed **solely** from the above types (and that are using the Tlayuda macro)
+
+Types with full paths will have their paths ignored and behave as whatever the last segment is. I.e., "std::ffi::OsString" will be treated as "OsString."
