@@ -1,5 +1,5 @@
 use std::ffi::OsString;
-use tlayuda::*;
+use tlayuda::Tlayuda;
 
 #[derive(Tlayuda, Debug)]
 pub struct Person {
@@ -19,6 +19,16 @@ pub struct Teacher {
 #[derive(Debug)]
 pub struct NonTlayudaUsingStruct {
     pub id: u32,
+}
+
+#[derive(Tlayuda, Debug)]
+pub struct IgnoreTester {
+    pub type_string: String,
+    #[tlayuda_ignore]
+    pub type_bool: bool,
+    pub type_i8: i8,
+    #[tlayuda_ignore]
+    pub type_vec_u32: Vec<u32>,
 }
 
 #[derive(Tlayuda, Debug)]

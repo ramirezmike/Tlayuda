@@ -116,3 +116,30 @@ Currently Tlayuda supports structs that are **solely** composed of the following
 * structs composed **solely** from the above types (and that are using the Tlayuda macro)
 
 Types with full paths will have their paths ignored and behave as whatever the last segment is. I.e., "std::ffi::OsString" will be treated as "OsString."
+
+While the goal is to support as many types as possible, it's currently likely to run into unsupported types. Adding a `tlayuda_ignore` attribute above an unsupported field will mark that field to be skipped. Instead, the `.tlayuda()` function will be modified to take a parameter of that type which will be cloned to populate that field during the build process.
+
+```
+    #[derive(Tlayuda)]
+    pub structA {
+        pub some_field: u32,
+        pub some_other_field: bool,
+        #[tlayuda_ignore] // add attribute above unsupported types
+        pub some_unsupported_type: Vec::<u32>,
+    }
+
+    /* inside a test */
+
+    let some_vec: Vec::<32> = vec![1, 2, 3]; // construct a value for the unsupported type
+    let mut builder = structA.tlayuda(some_vec); // ignored field now required as a parameter instead of being handled by tlayuda
+    let some_1 = builder.build(); 
+
+    assert_eq!(100, some_1.some_unsupported_type[0]); // value gets populated with value passed into tlayuda()
+
+    let some_2 = builder.build(); 
+    assert_eq!(100, some_2.some_unsupported_type[0]); // value is cloned across builds
+```
+
+## Current TODO list:
+- [ ] Add vec as a supported type
+- [ ] Add an "order" parameter to the tlayuda_ignore attribute to customize `tlayuda()` parameter order

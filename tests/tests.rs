@@ -162,3 +162,21 @@ fn verify_full_path() {
     let type_tester = models::TypeTester::tlayuda().build();
     assert_eq!("type_full_path0", type_tester.type_full_path);
 }
+
+#[test]
+fn verify_ignore_attribute() {
+    let vec_u32: Vec<u32> = vec![100];
+    let ignore_tester = models::IgnoreTester::tlayuda(true, vec_u32).build();
+    assert_eq!("type_string0", ignore_tester.type_string);
+    assert_eq!(true, ignore_tester.type_bool);
+    assert_eq!(100, ignore_tester.type_vec_u32[0]);
+}
+
+#[test]
+fn verify_ignore_attribute_build_vec() {
+    let vec_u32: Vec<u32> = vec![100];
+    models::IgnoreTester::tlayuda(true, vec_u32)
+        .build_vec(100)
+        .iter()
+        .for_each(|x| assert_eq!(100, x.type_vec_u32[0]));
+}
