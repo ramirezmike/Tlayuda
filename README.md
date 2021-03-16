@@ -140,7 +140,7 @@ The builder can also generate a `Vec::<_>` of the struct with a call to `build_v
 
 ```
 
-You can also change the starting index of the builder with a call to `with_index(index: usize)`. Additionally, every call to the builder object (excluding calls to `build` or `build_vec` return the builder to allow chaining.
+You can also change the starting index of the builder with a call to `with_index(index: usize)`. Additionally, every call to the builder object (excluding calls to `build` or `build_vec`) will return the builder to allow chaining.
 
 ```
     Person::tlayuda()
