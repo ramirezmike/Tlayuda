@@ -213,3 +213,5 @@ While the goal is to support as many types as possible, it's currently likely to
 - [X] Add vec as a supported type
 - [ ] Add an "order" parameter to the tlayuda_ignore attribute to customize `tlayuda()` parameter order
 - [ ] Add more type supports for arrays (including nested arrays)
+- [ ] Add support for HashMaps 
+- [ ] Add support for tuples consisting of current supported types
