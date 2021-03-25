@@ -4,38 +4,44 @@ use syn::{parse_macro_input, ItemStruct, Meta, Type};
 
 #[proc_macro_derive(Tlayuda, attributes(tlayuda_ignore))]
 pub fn entry_point(input: TokenStream) -> TokenStream {
-    let item_struct = parse_macro_input!(input as ItemStruct);
-    let source_struct_name = item_struct.ident.clone();
-    let fields = get_fields(item_struct);
-
+    let source_struct = parse_macro_input!(input as ItemStruct);
+    let source_struct_name = source_struct.ident.clone();
+    let fields = get_fields(source_struct);
     let inner_builder_name = quote::format_ident!("Tlayuda{}Builder", source_struct_name);
+
     let OutputTokenPartials {
         field_declarations,
         field_builder_intializers,
         field_setter_functions,
     } = generate_output_tokens(&fields);
+
     let builder_parameters = fields
         .iter()
         .filter(|f| f.is_ignored)
-        .map(
-            |FieldInfo {
-                 identifier: x,
-                 field_type: t,
-                 ..
-             }| {
-                quote! { #x: #t }
-            },
-        )
+        .map(|f| {
+            let identifier = &f.identifier;
+            let field_type = &f.field_type;
+
+            quote! { #identifier: #field_type }
+        })
         .collect::<Vec<_>>();
+
     let (ignored_fields, fields): (Vec<_>, Vec<_>) = fields.iter().partition(|f| f.is_ignored);
-    let inner_builder_constructor_parameters = ignored_fields.iter().map(|f| {
-        let i = f.identifier.clone();
-        quote! { #i }
-    });
-    let ignored_fields = ignored_fields.iter().map(|f| {
-        let i = f.identifier.clone();
-        quote! { #i: self.#i.clone(), }
-    });
+
+    // Ignored fields will be manually populated by the user with a clonable
+    // instance passed into the initial .tlayuda() call. The following
+    // is intended to create those parameters.
+    let inner_builder_constructor_parameters = ignored_fields.iter()
+                                                             .map(|f| {
+                                                                 let i = &f.identifier;
+                                                                 quote! { #i }
+                                                             });
+    let ignored_fields = ignored_fields.iter()
+                                       .map(|f| {
+                                           let i = &f.identifier;
+                                           quote! { #i: self.#i.clone(), }
+                                       });
+
     let fields = fields.iter().map(|f| f.identifier.clone());
 
     let output = quote! {
@@ -127,12 +133,12 @@ fn generate_output_tokens(fields: &Vec<FieldInfo>) -> OutputTokenPartials {
         .iter()
         .filter(|f| !f.is_ignored)
         .map(|field| {
-            let func_name = quote::format_ident!("set_{}", field.identifier);
+            let set_func_name = quote::format_ident!("set_{}", field.identifier);
             let identifier = &field.identifier;
             let field_type = &field.field_type;
 
             quote! {
-                pub fn #func_name<F: 'static>(mut self, f: F) -> Self where
+                pub fn #set_func_name<F: 'static>(mut self, f: F) -> Self where
                     F: Fn(usize) -> #field_type {
                         self.#identifier = Box::new(f);
                         self
@@ -144,38 +150,43 @@ fn generate_output_tokens(fields: &Vec<FieldInfo>) -> OutputTokenPartials {
     let field_builder_intializers = fields
         .iter()
         .map(|field| {
-            let identity = match field.field_type.clone() {
-                Type::Path(type_path) => match type_path.path.get_ident() {
-                    Some(ident) => (ident.clone(), ident.into_token_stream()),
-                    None => (
-                        type_path.path.segments.last().unwrap().ident.clone(),
-                        type_path.into_token_stream(),
-                    ),
-                },
-                _ => todo!("Type {:?} not supported", field.field_type),
-            };
-
             let identifier = &field.identifier;
-            let identity_tokens = identity.1;
 
             if field.is_ignored {
                 quote! { #identifier: #identifier }
             } else {
-                let f = match identity.0.to_string().as_str() {
-                    "String" => quote! { |i| format!("{}{}", stringify!(#identifier), i).into() },
-                    "OsString" => quote! { |i| format!("{}{}", stringify!(#identifier), i).into() },
-                    "char" => quote! { |i| std::char::from_digit(i as u32, 10).unwrap_or('a') },
-                    "bool" => quote! { |i| false },
-                    "i8" | "i16" | "i32" | "u8" | "u16" | "u32" | "i64" | "i128" | "isize"
-                    | "u64" | "u128" | "usize" | "f32" | "f64" => {
-                        quote! { |i| i as #identity_tokens }
-                    }
-                    _ => {
-                        // attempt to call a builder that may be on this type
-                        // this will end up causing a compile error if the type doesn't have
-                        // the #[derive(Tlayuda)] macro.
-                        // TODO: Need to figure out a way to communicate this better in the compiler
-                        quote! { |i| #identity_tokens::tlayuda().with_index(i).build() }
+                let field_type = parse_field_type(&field.field_type);
+
+                let f =
+                match field_type {
+                    FieldType::Basic(field_type, full_field_type) => {
+                        match field_type.to_string().as_str() {
+                            "String" => quote! { |i| format!("{}{}", stringify!(#identifier), i).into() },
+                            "OsString" => quote! { |i| format!("{}{}", stringify!(#identifier), i).into() },
+                            "char" => quote! { |i| std::char::from_digit(i as u32, 10).unwrap_or('a') },
+                            "bool" => quote! { |i| false },
+                            "i8" | "i16" | "i32" | "u8" | "u16" | "u32" | "i64" | "i128" | "isize"
+                            | "u64" | "u128" | "usize" | "f32" | "f64" => {
+                                quote! { |i| i as #full_field_type }
+                            },
+                            "Vec" => quote! { |i| Vec::new() },
+                            _ => {
+                                // attempt to call a builder that may be on this type
+                                // this will end up causing a compile error if the type doesn't have
+                                // the #[derive(Tlayuda)] macro.
+                                // TODO: Need to figure out a way to communicate this better in the compiler
+                                quote! { |i| #full_field_type::tlayuda().with_index(i).build() }
+                            }
+                        }
+                    },
+                    FieldType::Array(field_type, full_field_type, length) => {
+                        match field_type.to_string().as_str() {
+                            "i8" | "i16" | "i32" | "u8" | "u16" | "u32" | "i64" | "i128" | "isize"
+                            | "u64" | "u128" | "usize" | "f32" | "f64" => {
+                                quote! { |i| [i as #full_field_type; #length] }
+                            },
+                            _ => panic!("Type {:?} not yet supported for arrays", field_type)
+                        }
                     }
                 };
 
@@ -188,15 +199,15 @@ fn generate_output_tokens(fields: &Vec<FieldInfo>) -> OutputTokenPartials {
         .iter()
         .map(
             |FieldInfo {
-                 identifier: x,
-                 field_type: t,
+                 identifier,
+                 field_type,
                  is_ignored,
              }| {
                 if *is_ignored {
-                    quote! { #x: #t }
+                    quote! { #identifier: #field_type }
                 } else {
                     quote! {
-                        #x: Box<dyn FnMut(usize) -> #t>
+                        #identifier: Box<dyn FnMut(usize) -> #field_type>
                     }
                 }
             },
@@ -207,5 +218,45 @@ fn generate_output_tokens(fields: &Vec<FieldInfo>) -> OutputTokenPartials {
         field_declarations,
         field_builder_intializers,
         field_setter_functions,
+    }
+}
+
+enum FieldType {
+    Basic(syn::Ident, proc_macro2::TokenStream),
+    Array(syn::Ident, proc_macro2::TokenStream, usize),
+}
+
+fn parse_field_type(field_type: &syn::Type) -> FieldType {
+    match field_type {
+        Type::Path(type_path) => match type_path.path.get_ident() {
+            Some(ident) => FieldType::Basic(ident.clone(), ident.into_token_stream()),
+            None => (
+                FieldType::Basic(type_path.path.segments.last().unwrap().ident.clone(),
+                                 type_path.into_token_stream())
+            ),
+        },
+        Type::Array(type_array) => {
+            match parse_field_type(&type_array.elem) {
+                FieldType::Basic(i, ts) => {
+                    match &type_array.len {
+                        syn::Expr::Lit(expr) => {
+                            match &expr.lit {
+                                syn::Lit::Int(number) => {
+                                    match number.base10_parse::<usize>() {
+                                        Ok(parsed_number) => FieldType::Array(i, ts, parsed_number),
+                                        _ => panic!("Number literal in array was invalid: {:?}", number)
+                                    }
+                                },
+                                _ => todo!("Array length literal {:?} not yet supported", expr)
+                            }
+                            
+                        },
+                        _ => todo!("Array length expression {:?} not yet supported", type_array.len)
+                    }
+                },
+                _ => todo!("Nested arrays not yet supported")
+            }
+        },
+        _ => todo!("Type {:?} not supported", field_type),
     }
 }

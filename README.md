@@ -180,6 +180,8 @@ Currently Tlayuda supports structs that are **solely** composed of the following
 * bools
 * char
 * String, OsString
+* Vecs
+* Arrays with numeric primitives
 * structs composed **solely** from the above types (and that are using the Tlayuda macro)
 
 Types with full paths will have their paths ignored and behave as whatever the last segment is. I.e., "std::ffi::OsString" will be treated as "OsString."
@@ -208,5 +210,6 @@ While the goal is to support as many types as possible, it's currently likely to
 ```
 
 ## Current TODO list:
-- [ ] Add vec as a supported type
+- [X] Add vec as a supported type
 - [ ] Add an "order" parameter to the tlayuda_ignore attribute to customize `tlayuda()` parameter order
+- [ ] Add more type supports for arrays (including nested arrays)

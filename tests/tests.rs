@@ -180,3 +180,25 @@ fn verify_ignore_attribute_build_vec() {
         .iter()
         .for_each(|x| assert_eq!(100, x.type_vec_u32[0]));
 }
+
+#[test]
+fn verify_vec() {
+    let type_tester = models::TypeTester::tlayuda().build();
+    assert_eq!(0, type_tester.type_vec_u32.len());
+
+    let type_tester = models::TypeTester::tlayuda()
+                        .set_type_vec_u32(|i| vec!(i as u32)) 
+                        .build();
+    assert_eq!(0, type_tester.type_vec_u32[0]);
+}
+
+#[test]
+fn verify_array() {
+    let type_tester = models::TypeTester::tlayuda().build();
+    assert_eq!(3, type_tester.type_array_u32.len());
+
+    let type_tester = models::TypeTester::tlayuda()
+                        .set_type_array_u32(|_| [0, 1, 2]) 
+                        .build();
+    assert_eq!(0, type_tester.type_array_u32[0]);
+}
