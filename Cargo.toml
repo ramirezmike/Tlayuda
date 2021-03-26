@@ -1,6 +1,6 @@
 [package]
 name = "tlayuda"
-version = "0.1.4"
+version = "0.1.5"
 description = "A derive procedural macro for structs that adds a static method that generates instances of the struct with minimal configuration."
 authors = ["mramirez <ramirezmike2@gmail.com>"]
 edition = "2018"
@@ -13,3 +13,8 @@ proc-macro = true
 proc-macro2 = "1.0.24"
 quote = "1.0.9"
 syn = { version="1.0.61", features = ["full", "extra-traits"] }
+
+### FEATURES #################################################################
+[features]
+# By default, Tlayuda only works in tests. Set this feature to allow outside of test runs.
+allow_outside_tests = []

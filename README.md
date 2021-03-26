@@ -215,9 +215,13 @@ While the goal is to support as many types as possible, it's currently likely to
     assert_eq!(100, some_2.some_unsupported_type[0]); // value is cloned across builds
 ```
 
+## Running outside of Tests
+By default, Tlayuda only does anything if you're executing tests. Otherwise, the macro will output an empty TokenStream. While the construction of objects should remain consistent with additions to Tlayuda, it is intended for testing purposes. If you have a use-case for using Tlayuda outside of tests, you can do so by enabling the "allow_outside_tests" feature.
+
 ## Current TODO list:
 - [X] Add vec as a supported type
 - [ ] Add an "order" parameter to the tlayuda_ignore attribute to customize `tlayuda()` parameter order
 - [ ] Add more type supports for arrays (including nested arrays)
 - [ ] Add support for HashMaps 
 - [ ] Add support for tuples consisting of current supported types
+- [ ] Fix failing Doc tests
