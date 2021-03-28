@@ -1,16 +1,18 @@
-#[derive(Debug)]
-struct TemplateExample {
+use tlayuda::*;
+
+#[derive(Debug, Tlayuda)]
+pub struct TemplateExample {
     first_name: String,
     last_name: String,
 }
 
 impl TemplateExample {
-    pub fn tlayuda() -> ExampleBuilder {
+    pub fn build() -> ExampleBuilder {
         ExampleBuilder::new()
     }
 }
 
-struct ExampleBuilder {
+pub struct ExampleBuilder {
     first_name: Box<dyn FnMut(usize) -> String>,
     last_name: Box<dyn FnMut(usize) -> String>,
 }
@@ -51,7 +53,14 @@ impl ExampleBuilder {
 
 fn main() {
     // this is a scratch pad example to model macro output after
-    let mut example = TemplateExample::tlayuda();
+    let mut example = TemplateExample::build();
     example = example.set_first_name(|i| format!("Example{}", i).into());
     println!("{:?}", example.build());
+
+    // this is to test enabling allow_outside_tests feature
+    /*
+        let mut example = TemplateExample::tlayuda();
+        example = example.set_first_name(|i| format!("Example{}", i).into());
+        println!("{:?}", example.build());
+    */
 }

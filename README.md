@@ -216,7 +216,7 @@ While the goal is to support as many types as possible, it's currently likely to
 ```
 
 ## Running outside of Tests
-By default, Tlayuda only does anything if you're executing tests. Otherwise, the macro will output an empty TokenStream. While the construction of objects should remain consistent with additions to Tlayuda, it is intended for testing purposes. If you have a use-case for using Tlayuda outside of tests, you can do so by enabling the "allow_outside_tests" feature.
+By default, Tlayuda only works while executing tests; the macro outputs code using a cfg[(test)] attribute so it only affects tests. While the construction of objects should remain consistent across versions of Tlayuda, the intent and design of the generated code is intended for testing purposes. If you have a use-case for using Tlayuda outside of tests, you can do so by enabling the "allow_outside_tests" feature.
 
 ## Current TODO list:
 - [X] Add vec as a supported type

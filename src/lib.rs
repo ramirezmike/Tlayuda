@@ -273,11 +273,12 @@
 //! ```
 //!
 //! # Running outside of Tests
-//! By default, Tlayuda only does anything if you're executing tests. Otherwise, the macro 
-//! will output an empty TokenStream. While the construction of objects should remain 
-//! consistent with additions to Tlayuda, it is intended for testing purposes. If you 
-//! have a use-case for using Tlayuda outside of tests, you can do so by enabling 
-//! the "allow_outside_tests" feature.
+//! By default, Tlayuda only works while executing tests; the macro outputs code
+//! using a cfg[(test)] attribute so it only affects tests. While the construction 
+//! of objects should remain consistent across versions of Tlayuda, the intent and
+//! design of the generated code is intended for testing purposes. If you have a
+//! use-case for using Tlayuda outside of tests, you can do so by enabling the
+//! "allow_outside_tests" feature.
 //!
 //! # Example Output
 //!
@@ -376,19 +377,12 @@
 //! ```
 //!
 
-
 use proc_macro::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{parse_macro_input, ItemStruct, Meta, Type};
 
-#[cfg(all(not(test), not(feature="allow_outside_tests")))]
-#[proc_macro_derive(Tlayuda, attributes(tlayuda_ignore))]
-pub fn entry_point(_input: TokenStream) -> TokenStream {
-    TokenStream::new()
-}
 
 /// A derive macro that generates a test data builder for a struct
-#[cfg(any(test, feature="allow_outside_tests"))]
 #[proc_macro_derive(Tlayuda, attributes(tlayuda_ignore))]
 pub fn entry_point(input: TokenStream) -> TokenStream {
     let source_struct = parse_macro_input!(input as ItemStruct);
@@ -432,11 +426,13 @@ pub fn entry_point(input: TokenStream) -> TokenStream {
     let fields = fields.iter().map(|f| f.identifier.clone());
 
     let output = quote! {
+        #[cfg(any(test, feature="allow_outside_tests"))]
         pub struct #inner_builder_name {
             index: usize,
             #(#field_declarations),*
         }
 
+        #[cfg(any(test, feature="allow_outside_tests"))]
         impl #inner_builder_name {
             pub fn new(#(#builder_parameters),*) -> #inner_builder_name {
                 #inner_builder_name {
@@ -470,6 +466,7 @@ pub fn entry_point(input: TokenStream) -> TokenStream {
             }
         }
 
+        #[cfg(any(test, feature="allow_outside_tests"))]
         impl #source_struct_name {
             pub fn tlayuda(#(#builder_parameters),*) -> #inner_builder_name {
                 #inner_builder_name::new(#(#inner_builder_constructor_parameters),* )
