@@ -1,6 +1,6 @@
 [package]
 name = "tlayuda"
-version = "0.1.5"
+version = "0.1.6"
 description = "A derive procedural macro for structs that adds a static method that generates instances of the struct with minimal configuration."
 authors = ["mramirez <ramirezmike2@gmail.com>"]
 edition = "2018"

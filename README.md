@@ -1,4 +1,4 @@
-[![github]](https://github.com/ramirezmike/Tlayuda)&ensp;[![crates-io]](https://crates.io/crates/tlayuda)&ensp;[![docs-rs]](https://docs.rs/tlayuda/0.1.4/tlayuda/)
+[![github]](https://github.com/ramirezmike/Tlayuda)&ensp;[![crates-io]](https://crates.io/crates/tlayuda)&ensp;[![docs-rs]](https://docs.rs/tlayuda/)
 
 [github]: https://img.shields.io/badge/github-8da0cb?style=for-the-badge&labelColor=555555&logo=github
 [crates-io]: https://img.shields.io/badge/crates.io-fc8d62?style=for-the-badge&labelColor=555555&logo=rust
@@ -196,7 +196,7 @@ While the goal is to support as many types as possible, it's currently likely to
 
 ```
     #[derive(Tlayuda)]
-    pub structA {
+    pub strut StructA {
         pub some_field: u32,
         pub some_other_field: bool,
         #[tlayuda_ignore] // add attribute above unsupported types
@@ -205,8 +205,8 @@ While the goal is to support as many types as possible, it's currently likely to
 
     /* inside a test */
 
-    let some_vec: Vec::<32> = vec![1, 2, 3]; // construct a value for the unsupported type
-    let mut builder = structA.tlayuda(some_vec); // ignored field now required as a parameter instead of being handled by tlayuda
+    let some_vec: Vec::<u32> = vec![1, 2, 3]; // construct a value for the unsupported type
+    let mut builder = StructA::tlayuda(some_vec); // ignored field now required as a parameter instead of being handled by tlayuda
     let some_1 = builder.build(); 
 
     assert_eq!(100, some_1.some_unsupported_type[0]); // value gets populated with value passed into tlayuda()
@@ -218,10 +218,12 @@ While the goal is to support as many types as possible, it's currently likely to
 ## Running outside of Tests
 By default, Tlayuda only works while executing tests; the macro outputs code using a cfg[(test)] attribute so it only affects tests. While the construction of objects should remain consistent across versions of Tlayuda, the intent and design of the generated code is intended for testing purposes. If you have a use-case for using Tlayuda outside of tests, you can do so by enabling the "allow_outside_tests" feature.
 
+
 ## Current TODO list:
 - [X] Add vec as a supported type
+- [X] Fix failing Doc tests
 - [ ] Add an "order" parameter to the tlayuda_ignore attribute to customize `tlayuda()` parameter order
 - [ ] Add more type supports for arrays (including nested arrays)
 - [ ] Add support for HashMaps 
 - [ ] Add support for tuples consisting of current supported types
-- [X] Fix failing Doc tests
+- [ ] Add matching access modifier (public/private) to avoid leaking private types

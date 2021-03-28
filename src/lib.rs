@@ -101,7 +101,7 @@
 //! Add the Tlayuda derive macro above a struct.
 //!
 //! ```
-//! use crate::tlayuda::*;
+//! # use crate::tlayuda::*;
 //! #[derive(Tlayuda)]
 //! pub struct Person {
 //!     id: u32,
@@ -118,7 +118,7 @@
 //!  and its index (an incrementing ID stored by the builder).
 //!
 //! ```
-//! use crate::tlayuda::*;
+//! # use crate::tlayuda::*;
 //! #   #[derive(Tlayuda)]
 //! #   pub struct Person {
 //! #       id: u32,
@@ -128,6 +128,7 @@
 //! #   }
 //! # #[test]
 //! # fn test() {
+//! /* inside a test */
 //! let mut builder = Person::tlayuda();
 //! let person = builder.build();
 //!
@@ -154,7 +155,7 @@
 //! with values that are irrelevant to the current test.
 //!
 //! ```
-//! use crate::tlayuda::*;
+//! # use crate::tlayuda::*;
 //! #   #[derive(Tlayuda)]
 //! #   pub struct Person {
 //! #       id: u32,
@@ -164,6 +165,7 @@
 //! #   }
 //! # #[test]
 //! # fn test() {
+//! /* inside a test */
 //! let mut builder = Person::tlayuda()
 //!     .set_first_name(|i| {
 //!         if i == 1 {
@@ -224,6 +226,7 @@
 //! #   }
 //! # #[test]
 //! # fn test() {
+//! /* inside a test */
 //! Person::tlayuda()
 //!     .set_first_name(|i| match (i % 3, i % 5) {
 //!         (0, 0) => "FizzBuzz".into(),
@@ -243,7 +246,7 @@
 //! errors if the inner struct has unsupported fields or doesn't use the Tlayuda macro.
 //!
 //! ```
-//! use crate::tlayuda::*;
+//! # use crate::tlayuda::*;
 //! #[derive(Tlayuda)]
 //! pub struct StructA {
 //!     pub some_field: u32,
@@ -257,6 +260,7 @@
 //!
 //! # #[test]
 //! # fn test() {
+//! /* inside a test */
 //! let some_A = StructA::tlayuda().build();
 //! assert_eq!("field_on_b0", some_A.another_struct.field_on_struct_b);
 //! # }
@@ -321,6 +325,70 @@
 //! design of the generated code is intended for testing purposes. If you have a
 //! use-case for using Tlayuda outside of tests, you can do so by enabling the
 //! "allow_outside_tests" feature.
+//!
+//!
+//! # Tlayuda Anti-patterns
+//! A common anti-pattern to avoid when using Tlayuda is writing asserts based on
+//! the default outputs of Tlayuda when a custom value would be a better indicator
+//! that your code is working as expected.
+//!
+//! ```
+//! # use crate::tlayuda::*;
+//! #   #[derive(Tlayuda)]
+//! #   pub struct Person {
+//! #       id: u32,
+//! #       first_name: String,
+//! #       last_name: String,
+//! #       is_active: bool
+//! #   }
+//! # // implementation isn't important, this is just a stub for demonstration
+//! # #[test]
+//! # fn get_by_id(_id: usize) -> Person { Person::tlayuda().build() }
+//! # #[test]
+//! # fn test() {
+//! /* inside a test */
+//! let person = get_by_id(0); // some function using generated data
+//! assert_eq!("first_name0", person.first_name); // BAD
+//! # }
+//! ```
+//!
+//! While this works, this is a bad pattern because it's possible the assert
+//! was written to **match** the output rather than **predict** the output.
+//! An assert like this can hide a bug in the function you're testing and seeing
+//! the default generated value in the assert is an indication that the test
+//! was written to match rather than predict the results.
+//! 
+//! Instead, use the `set_` functions to set the expected return value. 
+//!
+//! ```
+//! # use crate::tlayuda::*;
+//! #   #[derive(Tlayuda)]
+//! #   pub struct Person {
+//! #       id: u32,
+//! #       first_name: String,
+//! #       last_name: String,
+//! #       is_active: bool
+//! #   }
+//! # // implementation isn't important, this is just a stub for demonstration
+//! # #[test]
+//! # fn get_by_id(_id: usize) -> Person { Person::tlayuda().build() }
+//! # #[test]
+//! # fn test() {
+//! // create a custom builder and use this to generate data
+//! let builder = Person::tlayuda()
+//!                     .set_first_name(|i| {
+//!                         if i == 0 {
+//!                             "Michael".to_string()
+//!                         } else {
+//!                             format!("first_name{}", i)
+//!                         }
+//!                     });
+//! 
+//! /* inside a test */
+//! let person = get_by_id(0); // some function using generated data
+//! assert_eq!("Michael", person.first_name); // GOOD
+//! # }
+//! ```
 //!
 //! # Example Output
 //!
@@ -463,11 +531,17 @@ pub fn entry_point(input: TokenStream) -> TokenStream {
                                                              });
     let ignored_fields = ignored_fields.iter()
                                        .map(|f| {
-                                           let i = &f.identifier;
-                                           quote! { #i: self.#i.clone(), }
+                                           let inner_identifier = quote::format_ident!("inner_{}", f.identifier);
+                                           let identifier = &f.identifier;
+                                           quote! { #identifier: self.#inner_identifier.clone(), }
                                        });
 
-    let fields = fields.iter().map(|f| f.identifier.clone());
+    let fields = fields.iter()
+                       .map(|f| {
+                           let inner_identifier = quote::format_ident!("inner_{}", f.identifier);
+                           let identifier = &f.identifier;
+                           quote! { #identifier: self.#inner_identifier.as_mut()(i), }
+                       });
 
     let output = quote! {
         #[cfg(any(test, feature="allow_outside_tests"))]
@@ -501,7 +575,7 @@ pub fn entry_point(input: TokenStream) -> TokenStream {
                 let i = self.take_index();
                 #source_struct_name {
                     #(#ignored_fields)*
-                    #(#fields: self.#fields.as_mut()(i)),*
+                    #(#fields)*
                 }
             }
 
@@ -562,7 +636,7 @@ fn generate_output_tokens(fields: &Vec<FieldInfo>) -> OutputTokenPartials {
         .filter(|f| !f.is_ignored)
         .map(|field| {
             let set_func_name = quote::format_ident!("set_{}", field.identifier);
-            let identifier = &field.identifier;
+            let identifier = quote::format_ident!("inner_{}", field.identifier);
             let field_type = &field.field_type;
 
             quote! {
@@ -578,10 +652,12 @@ fn generate_output_tokens(fields: &Vec<FieldInfo>) -> OutputTokenPartials {
     let field_builder_intializers = fields
         .iter()
         .map(|field| {
+            let inner_identifier = quote::format_ident!("inner_{}", field.identifier);
             let identifier = &field.identifier;
 
             if field.is_ignored {
-                quote! { #identifier: #identifier }
+                let value = &field.identifier;
+                quote! { #inner_identifier: #value }
             } else {
                 let field_type = parse_field_type(&field.field_type);
 
@@ -618,7 +694,7 @@ fn generate_output_tokens(fields: &Vec<FieldInfo>) -> OutputTokenPartials {
                     }
                 };
 
-                quote! { #identifier: Box::new(#f) }
+                quote! { #inner_identifier: Box::new(#f) }
             }
         })
         .collect();
@@ -631,6 +707,7 @@ fn generate_output_tokens(fields: &Vec<FieldInfo>) -> OutputTokenPartials {
                  field_type,
                  is_ignored,
              }| {
+                let identifier = quote::format_ident!("inner_{}", identifier);
                 if *is_ignored {
                     quote! { #identifier: #field_type }
                 } else {
