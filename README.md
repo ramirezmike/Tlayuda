@@ -224,4 +224,4 @@ By default, Tlayuda only works while executing tests; the macro outputs code usi
 - [ ] Add more type supports for arrays (including nested arrays)
 - [ ] Add support for HashMaps 
 - [ ] Add support for tuples consisting of current supported types
-- [ ] Fix failing Doc tests
+- [X] Fix failing Doc tests

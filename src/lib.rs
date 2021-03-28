@@ -61,6 +61,8 @@
 //!   Simply place the derive macro above a struct: 
 //!
 //! ```
+//! use crate::tlayuda::*;
+//!
 //! #[derive(Tlayuda)]
 //! pub struct Student { /* --snip-- */ }
 //! ```
@@ -99,6 +101,7 @@
 //! Add the Tlayuda derive macro above a struct.
 //!
 //! ```
+//! use crate::tlayuda::*;
 //! #[derive(Tlayuda)]
 //! pub struct Person {
 //!     id: u32,
@@ -115,6 +118,7 @@
 //!  and its index (an incrementing ID stored by the builder).
 //!
 //! ```
+//! use crate::tlayuda::*;
 //! #   #[derive(Tlayuda)]
 //! #   pub struct Person {
 //! #       id: u32,
@@ -122,6 +126,8 @@
 //! #       last_name: String,
 //! #       is_active: bool
 //! #   }
+//! # #[test]
+//! # fn test() {
 //! let mut builder = Person::tlayuda();
 //! let person = builder.build();
 //!
@@ -138,6 +144,7 @@
 //! assert_eq!("first_name1", person.first_name);
 //! assert_eq!("last_name1", person.last_name);
 //! assert_eq!(false, person.is_active);
+//! # }
 //! ```
 //!
 //! The builder will also have a `set_` prefixed method for each field in the struct that 
@@ -147,6 +154,16 @@
 //! with values that are irrelevant to the current test.
 //!
 //! ```
+//! use crate::tlayuda::*;
+//! #   #[derive(Tlayuda)]
+//! #   pub struct Person {
+//! #       id: u32,
+//! #       first_name: String,
+//! #       last_name: String,
+//! #       is_active: bool
+//! #   }
+//! # #[test]
+//! # fn test() {
 //! let mut builder = Person::tlayuda()
 //!     .set_first_name(|i| {
 //!         if i == 1 {
@@ -161,6 +178,7 @@
 //!  
 //! let person = builder.build();
 //! assert_eq!("Michael", person.first_name);
+//! # }
 //! ```
 //! 
 //! The builder can also generate a `Vec::<_>` of the struct with a call to `build_vec`. 
@@ -168,6 +186,7 @@
 //! incrementing the index after each build.
 //!
 //! ```
+//! #   use crate::tlayuda::*;
 //! #   #[derive(Tlayuda)]
 //! #   pub struct Person {
 //! #       id: u32,
@@ -175,6 +194,8 @@
 //! #       last_name: String,
 //! #       is_active: bool
 //! #   }
+//! # #[test]
+//! # fn test() {
 //! // builds 1000 Person objects and verifies
 //! // each object has a unique first_name value
 //! Person::tlayuda()
@@ -185,6 +206,7 @@
 //!     .for_each(|(i, x)| {
 //!         assert_eq!(i.to_string(), x.first_name);
 //!     });
+//! # }
 //! ```
 //!
 //! You can also change the starting index of the builder with a call to 
@@ -192,6 +214,16 @@
 //! (excluding calls to `build` or `build_vec`) will return the builder to allow chaining. 
 //!
 //! ```
+//! #   use crate::tlayuda::*;
+//! #   #[derive(Tlayuda)]
+//! #   pub struct Person {
+//! #       id: u32,
+//! #       first_name: String,
+//! #       last_name: String,
+//! #       is_active: bool
+//! #   }
+//! # #[test]
+//! # fn test() {
 //! Person::tlayuda()
 //!     .set_first_name(|i| match (i % 3, i % 5) {
 //!         (0, 0) => "FizzBuzz".into(),
@@ -201,6 +233,7 @@
 //!     })
 //!     .with_index(1)
 //!     .build_vec(100)
+//! # }
 //! ```
 //!
 //! Tlayuda will also automatically attempt to recursively build fields if they're 
@@ -210,6 +243,7 @@
 //! errors if the inner struct has unsupported fields or doesn't use the Tlayuda macro.
 //!
 //! ```
+//! use crate::tlayuda::*;
 //! #[derive(Tlayuda)]
 //! pub struct StructA {
 //!     pub some_field: u32,
@@ -221,8 +255,11 @@
 //!     pub field_on_b: String,
 //! }
 //!
+//! # #[test]
+//! # fn test() {
 //! let some_A = StructA::tlayuda().build();
 //! assert_eq!("field_on_b0", some_A.another_struct.field_on_struct_b);
+//! # }
 //! ```
 //!
 //! # Supported Types
@@ -248,21 +285,25 @@
 //! to populate that field during the build process.
 //!
 //! ```
+//!     use crate::tlayuda::*;
+//!
 //!     #[derive(Tlayuda)]
-//!     pub structA {
+//!     pub struct StructA {
 //!         pub some_field: u32,
 //!         pub some_other_field: bool,
 //!         #[tlayuda_ignore] // add attribute above unsupported types
 //!         pub some_unsupported_type: Vec::<u32>,
 //!     }
 //!
+//! # #[test]
+//! # fn test() {
 //!     /* inside a test */
 //!
 //!     // construct a value for the unsupported type
-//!     let some_vec: Vec::<32> = vec![1, 2, 3]; 
+//!     let some_vec: Vec::<u32> = vec![1, 2, 3]; 
 //!
 //!     // ignored field now required as a parameter instead of being handled by tlayuda
-//!     let mut builder = structA.tlayuda(some_vec); 
+//!     let mut builder = structA::tlayuda(some_vec); 
 //!     let some_1 = builder.build(); 
 //!
 //!     // value gets populated with value passed into tlayuda()
@@ -270,6 +311,7 @@
 //!
 //!     let some_2 = builder.build(); 
 //!     assert_eq!(100, some_2.some_unsupported_type[0]); // value is cloned across builds
+//! # }
 //! ```
 //!
 //! # Running outside of Tests
@@ -286,6 +328,8 @@
 //!
 //! 
 //! ```
+//! use crate::tlayuda::*;
+//!
 //! // given this struct
 //! #[derive(Tlayuda)]
 //! struct Person {
